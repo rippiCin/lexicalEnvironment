@@ -15,4 +15,4 @@ class ECStack {
   }
 }
 
-module.exports = ECStack;
+module.exports = new ECStack();

@@ -22,7 +22,7 @@ class ObjectEnvironmentRecords extends EnvironmentRecords {
   HasBinding(N) {
     const envRec = this;
     const bindings = envRec.bindingObject;
-    return Object.hasOwnProperty(bindings, N);
+    return bindings.hasOwnProperty(N);
   }
 
   /**
@@ -64,7 +64,7 @@ class ObjectEnvironmentRecords extends EnvironmentRecords {
     if (S && !propertyDescriptor.writable) {
       throw new Error('typeError，不能给只读属性赋值');
     }
-    binding[N] = V;
+    bindings[N] = V;
   }
 
   /**

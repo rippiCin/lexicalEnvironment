@@ -9,7 +9,7 @@ class ExecutionContext {
     // 词法环境和变量环境现在可看成是一样的，后面会写分开
     // 变量环境用于存放var function声明的变量
     // 词法环境用于存放let const声明的变量
-    this.variableEnvironment = this.lexicalEnvironment = lexicalEnvironment;
+    this.variableEnvironment = this.LexicalEnvironment = lexicalEnvironment;
     this.thisBindings = thisBindings;
   }
 }
