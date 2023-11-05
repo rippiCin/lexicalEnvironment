@@ -2,6 +2,7 @@
 const ECStack = require('./ECStack');
 const ExecutionContext = require('./ExecutionContext');
 const LexicalEnvironment = require('./LexicalEnvironment');
+const FunctionDeclaration = require('./FunctionDeclaration');
 // 当控制流进入一个执行环境时
 // 会设置该执行环境的this绑定，定义变量环境和初始词法环境，并执行定义绑定初始化过程
 let thisArg = global;
@@ -23,6 +24,7 @@ ECStack.push(globalEC);
 // 而当进入一个执行环境时，会按一下步骤在变量环境上创建绑定
 // 其中使用到调用者提供的代码设为code，如果执行的是函数代码，则设参数列表为args：arg=[3]
 
+// 变量的初始化
 // 1、令env为当前运行的执行环境的环境变量的环境记录
 const env = ECStack.current.LexicalEnvironment.environmentRecords;
 // 2、如果code是eval代码，则令configurableBindings为true，否则令configurableBindings为false
@@ -45,5 +47,44 @@ if (!varAlreadyDeclared) {
   env.SetMutableBinding(dn, undefined, strict);
 }
 
-console.log(env.HasBinding(dn));
-console.log(env.GetBindingValue(dn));
+// 函数的初始化
+// 按照源码顺序遍历code，对于每一个FunctionDeclaration表达式f：
+// 1、令fn为FunctionDeclaration表达式f中的标识符。
+const fn = 'one';
+// 2、初始化FunctionDeclaration表达式，并令fo为初始化的结果。
+// 2.1、指定FormalParameterList为可选参数列表
+let FormalParameterList = 'c';
+// 2.2、指定FunctionBody为函数体，指定Scope为词法环境，strict为布尔标记。
+let FunctionBody = `
+  var b = 2;
+  console.log(a, b, c);
+`;
+// 当前的词法环境会成为函数的作用域
+let scope = ECStack.current.LexicalEnvironment;
+strict = false;
+let fo = FunctionDeclaration.newInstance(fn, FormalParameterList, FunctionBody, scope, strict);
+varAlreadyDeclared = env.HasBinding(fn);
+if (!varAlreadyDeclared) {
+  // 先添加一个绑定 one
+  env.CreateMutableBinding(fn, configurableBindings);
+} else {
+  // 如果env是全局环境的环境记录对象
+  // 令go为全局对象
+  let go = global;
+  // 以fn为参数，调用go的获取属性的内部方法，并令existingProp为调用结果
+  let existingProp = Object.getOwnPropertyDescriptor(go, fn);
+  // 如果existingProp.configurable为true
+  if (existingProp.configurable) {
+    Object.defineProperty(go, fn, {
+      value: undefined,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
+  } else if (IsAccessorDescriptor(existingProp) || !existingProp.writable) {
+    throw new Error('TypeError');
+  }
+}
+env.SetMutableBinding(fn, fo, strict);
+console.log(env.GetBindingValue('one'));
+// 以上，绑定阶段结束
