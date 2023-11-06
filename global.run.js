@@ -26,7 +26,7 @@ ECStack.push(globalEC);
 
 // 变量的初始化
 // 1、令env为当前运行的执行环境的环境变量的环境记录
-const env = ECStack.current.LexicalEnvironment.environmentRecords;
+let env = ECStack.current.LexicalEnvironment.environmentRecords;
 // 2、如果code是eval代码，则令configurableBindings为true，否则令configurableBindings为false
 let configurableBindings = false;
 // 3、如果代码是严格模式下的代码，则令strict为true否则为false
@@ -86,5 +86,78 @@ if (!varAlreadyDeclared) {
   }
 }
 env.SetMutableBinding(fn, fo, strict);
-console.log(env.GetBindingValue('one'));
+// console.log(env.GetBindingValue('one'));
 // 以上，绑定阶段结束
+// 开始从上到下执行代码
+
+// a = 1;
+env.SetMutableBinding('a', 1);
+
+let F = fo;
+// 执行one(3);
+// 当控制流根据一个函数对象F、调用者提供的thisArg以及调用者提供的argumentList，进入函数代码的执行环境时，执行以下步骤；
+// 1、如果函数代码是严格模式下的代码， 设this绑定为thisArg
+// 2、否则如果thisArg是null或者undefined，则设this绑定为全局对象
+thisArg = global;
+// 3、否则如果Type(thisArg)的结果不为Object，则设this绑定为ToObject(thisArg)
+// if (Type(thisArg) !== 'object') {
+//   // 如果thisArg不是一个对象，就转成一个对象
+//   thisArg = ToObject(thisArg);
+// }
+// 4、否则设this绑定为thisArg
+// 5、以F的[[Scope]]内部属性为参数调用NewDeclarativeEnvironment，并令localEnv为调用的结果
+// 函数执行是创建的词法环境的outer为函数定义时的Scope
+let localEnv = LexicalEnvironment.NewDeclarativeEnvironment(F[`[[Scope]]`]);
+// 6、设词法环境为localEnv
+// 7、设变量环境为localEnv
+let oneEC = new ExecutionContext(localEnv, thisArg);
+ECStack.push(oneEC);
+// 再次获取当前的环境记录（one词法环境的环境记录项）
+env = ECStack.current.LexicalEnvironment.environmentRecords;
+// 8、令code为F的[[Code]]内部属性的值
+let code = F[`[[Code]]`];
+// 9、使用函数代码code和argumentList执行定义绑定初始化步骤
+// 如果代码为函数代码，则：
+// 9.1、令func为通过[[Call]]内部属性初始化code的执行的函数对象，令names为func的[[FormalParameters]]内部属性
+let func = F;
+let names = F[`[[FormalParameterList]]`];
+let args = [3];
+// 9.2、令argCount为args中元素数量
+let argCount = args.length;
+// 9.3、令n为数字类型，其值为0
+let n = 0;
+// 9.4、安列表顺序遍历names，对于每一个字符串argName：
+// 9.4.1、令n的值为n当前值加1
+// 9.4.2、如果n大于argCount，则令v为undefined，否则令v为args中的第n个元素
+// 9.4.3、以argName为参数，调用env的HasBinding具体方法，并令argAlreadyDeclared为调用的结果
+// 9.4.4、如果ArgAlreadyDeclared的值为false，以argName为参数调用env的CreateMutableBinding具体方法
+// 9.4.5、以argName、v和strict为参数，调用env的SetMutableBinding具体方法
+names.forEach((argName) => {
+  n += 1;
+  let v = n > argCount ? undefined : args[n - 1];
+  let ArgAlreadyDeclared = env.HasBinding(argName);
+  if (!ArgAlreadyDeclared) {
+    env.CreateMutableBinding(argName);
+  }
+  env.SetMutableBinding(argName, v, strict);
+});
+// 以arguments为参数，调用env的HasBinding具体方法，并令argumentsAlreadyDeclared为调用结果
+let argumentsAlreadyDeclared = env.HasBinding('arguments');
+if (!argumentsAlreadyDeclared) {
+  // 以fn、names、args、env和strict为参数，调用CreateArgumentsObject抽象运算函数，并令argsObj为调用结果
+  let argsObj = CreateArgumentsObject(fn, names, args, env, strict);
+  // 如果strict为true
+  // 以字符串arguments为参数，调用env的CreateImmutableBinding具体方法
+  // 以字符串arguments和argsObj为参数，调用env的InitializeImmutableBinding具体函数
+  if (strict) {
+    env.CreateMutableBinding('argument');
+    env.InitializeImmutableBinding('arguments', argsObj);
+  } else {
+    // 否则：
+    // 以字符串arguments为参数，调用env的CreateMutableBinding具体方法
+    // 以字符串arguments、argsObj和false为参数，调用env的SetMutableBinding具体函数
+    env.CreateMutableBinding('argument');
+    env.SetMutableBinding('argument', argsObj);
+  }
+}
+// 以上函数代码执行前的准备工作结束
