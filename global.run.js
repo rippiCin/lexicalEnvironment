@@ -3,6 +3,8 @@ const ECStack = require('./ECStack');
 const ExecutionContext = require('./ExecutionContext');
 const LexicalEnvironment = require('./LexicalEnvironment');
 const FunctionDeclaration = require('./FunctionDeclaration');
+const CreateArgumentsObject = require('./CreateArgumentsObject');
+const Reference = require('./Reference');
 // 当控制流进入一个执行环境时
 // 会设置该执行环境的this绑定，定义变量环境和初始词法环境，并执行定义绑定初始化过程
 let thisArg = global;
@@ -116,11 +118,20 @@ ECStack.push(oneEC);
 env = ECStack.current.LexicalEnvironment.environmentRecords;
 // 8、令code为F的[[Code]]内部属性的值
 let code = F[`[[Code]]`];
+dn = 'b';
+// 判断当前的环境记录中有没有定义过a这个变量
+varAlreadyDeclared = env.HasBinding(dn);
+if (!varAlreadyDeclared) {
+  // 先添加一个绑定 a
+  env.CreateMutableBinding(dn, configurableBindings);
+  // 给a赋值undefined
+  env.SetMutableBinding(dn, undefined, strict);
+}
 // 9、使用函数代码code和argumentList执行定义绑定初始化步骤
 // 如果代码为函数代码，则：
 // 9.1、令func为通过[[Call]]内部属性初始化code的执行的函数对象，令names为func的[[FormalParameters]]内部属性
 let func = F;
-let names = F[`[[FormalParameterList]]`];
+let names = func[`[[FormalParameters]]`];
 let args = [3];
 // 9.2、令argCount为args中元素数量
 let argCount = args.length;
@@ -161,3 +172,12 @@ if (!argumentsAlreadyDeclared) {
   }
 }
 // 以上函数代码执行前的准备工作结束
+env.SetMutableBinding('b', 2);
+let referenceA = LexicalEnvironment.GetIdentifierReference(ECStack.current.LexicalEnvironment, 'a', strict);
+let referenceB = LexicalEnvironment.GetIdentifierReference(ECStack.current.LexicalEnvironment, 'b', strict);
+let referenceC = LexicalEnvironment.GetIdentifierReference(ECStack.current.LexicalEnvironment, 'c', strict);
+console.log(
+  Reference.GetValue(referenceA),
+  Reference.GetValue(referenceB),
+  Reference.GetValue(referenceC),
+);

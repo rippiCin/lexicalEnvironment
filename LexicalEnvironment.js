@@ -1,5 +1,6 @@
 const DeclarativeEnvironmentRecords = require('./DeclarativeEnvironmentRecords');
 const ObjectEnvironmentRecords = require('./ObjectEnvironmentRecords');
+const Reference = require('./Reference');
 
 // 词法环境
 class LexicalEnvironment {
@@ -44,6 +45,28 @@ class LexicalEnvironment {
     env.environmentRecords = envRec;
     env.outer = E;
     return env;
+  }
+
+  /**
+   * 当调用GetIdentifierReference抽象运算时，需要制定一个词法环境lex，一个标识符字符串name以及一个布尔型标示strict。lex的值可为null
+   * 1、如果lex的值为null，则返回一个类型为引用的对象，其基值为undefined，引用的名称为name，严格模式标示的值为strict
+   * 2、令envRec为lex的环境数据
+   * 3、以name为参数N，调用envRec的HasBinding(N)具体方法，并令exists为调用结果
+   * 4、如果exists为true，则返回一个类型为引用的对象，其基值为envRec，引用的名称为name，严格模式标识的值为strict
+   * 5、否则令outer为lex的外部环境引用，以outer、name和strict为参数，调用GetIdentifierReference，并返回调用的结果
+   */
+  static GetIdentifierReference(lex, name, strict) {
+    if (!lex) {
+      return new Reference(undefined, name, strict);
+    } else {
+      let envRev = lex.environmentRecords;
+      let exists = envRev.HasBinding(name, strict);
+      if (exists) {
+        return new Reference(envRev, name, strict);
+      } else {
+        return LexicalEnvironment.GetIdentifierReference(lex.outer, name, strict);
+      }
+    }
   }
 }
 

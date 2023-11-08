@@ -9,7 +9,7 @@ class DeclarativeEnvironmentRecords extends EnvironmentRecords {
    */
   HasBinding(N) {
     const envRec = this;
-    return N in encRec;
+    return N in envRec;
   }
 
   /**
@@ -46,7 +46,7 @@ class DeclarativeEnvironmentRecords extends EnvironmentRecords {
     if (S && !propertyDescriptor.writable) {
       throw new Error('TypeError 给一个不可变的属性赋值');
     }
-    envRev[N] = V;
+    envRec[N] = V;
     propertyDescriptor.initialization = true;
   }
 
@@ -61,13 +61,13 @@ class DeclarativeEnvironmentRecords extends EnvironmentRecords {
     const envRec = this;
     console.assert(this.HasBinding(N), `当前环境中尚未定义${N}这个变量`);
     const propertyDescriptor = Object.getOwnPropertyDescriptor(envRec, N);
-    if (!propertyDescriptor.initialization) {
-      if (S) {
-        throw new Error('ReferenceError');
-      } else {
-        return undefined;
-      }
-    }
+    // if (!propertyDescriptor.initialization) {
+    //   if (S) {
+    //     throw new Error('ReferenceError');
+    //   } else {
+    //     return undefined;
+    //   }
+    // }
     return envRec[N];
   }
 
